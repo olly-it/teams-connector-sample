@@ -3,36 +3,54 @@ package it.olly.teamsconnectorsample.controller;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 @RestController
 @CrossOrigin
-@RequestMapping({ "/getmessages", "/api/messages" }) // TODO leave just /api/getmessages (filtered)
+@RequestMapping({ "/getmessages", "/api/getmessages" }) // TODO leave just /api/getmessages (filtered)
 public class GetMessages {
 	private static final Logger logger = LoggerFactory.getLogger(GetMessages.class);
 
-	public class Message {
-		public String msg;
+	@Autowired
+	private RestTemplate restTemplate;
 
-		public Message(String msg) {
-			this.msg = msg;
+	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<Map> get(@RequestParam String accessToken) throws IOException {
+		logger.info("get messages invoked with token = " + accessToken);
+		List<Map> ret = new ArrayList<>();
+
+		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		headers.add("Authorization", "Bearer " + accessToken);
+
+		String getUri = "https://graph.microsoft.com/v1.0/me/messages";
+		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(headers);
+		try {
+			ResponseEntity<Map> msgResponse = restTemplate.exchange(getUri, HttpMethod.GET, entity, Map.class);
+			logger.info("msgResponse: " + msgResponse);
+			List<Map> msgs = (List<Map>) msgResponse.getBody().get("value");
+			for (Map m : msgs) {
+				ret.add(m);
+			}
+		} catch (Exception e) {
+			logger.error("EEE", e);
 		}
 
-	}
-
-	@GetMapping()
-	public List<Message> get(@RequestParam String accessToken) throws IOException {
-		logger.info("get messages invoked with token = " + accessToken);
-		List<Message> ret = new ArrayList<>();
-		ret.add(new Message("ciao"));
-		ret.add(new Message("gigi"));
 		return ret;
 	}
 }

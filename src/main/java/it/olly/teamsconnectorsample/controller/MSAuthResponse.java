@@ -99,6 +99,8 @@ public class MSAuthResponse {
 			response.getWriter().println(tokenObj.getBody().access_token);
 			response.getWriter().println("<br><br>REFRESH_TOKEN: <br>");
 			response.getWriter().println(tokenObj.getBody().refresh_token);
+			response.getWriter().println("<br><br><a href=\"/api/getmessages?accessToken="
+					+ tokenObj.getBody().access_token + "\">read messages</a><br>");
 		} catch (Exception e) {
 			response.getWriter().println("<b>" + e.getMessage() + "</b>");
 			response.getWriter().println("<pre>");
