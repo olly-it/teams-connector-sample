@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public class ApiFilter implements Filter {
 	public static final String URL_PATTERNS = "/api/*";
 
-	private static final Logger logger = LoggerFactory.getLogger(ApiFilter.class);
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)

@@ -25,13 +25,17 @@ import org.springframework.web.client.RestTemplate;
 @RestController
 @RequestMapping("/msauthresponse")
 public class MSAuthResponse {
-	private static final Logger logger = LoggerFactory.getLogger(MSAuthResponse.class);
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	// CONFIG STUFF
 	@Value("${ms.client_id}")
 	public String CLIENT_ID;
 	@Value("${ms.client_secret}")
 	public String CLIENT_SECRET;
+	@Value("${ms.redirect_uri}")
+	public String REDIRECT_URI;
+	@Value("${ms.scope}")
+	public String SCOPE;
 
 	// public static final String REDIRECT_URI =
 	// "http://localhost:8080/msauthresponse";
@@ -41,8 +45,8 @@ public class MSAuthResponse {
 	private RestTemplate restTemplate;
 
 	public static class MSResponseForAccessToken {
-		public String token_type; // " Bearer"
-		public String scope = Index.SCOPE;
+		public String token_type; // " Bearer",
+		public String scope; // "openid%20offline_access%&20https://graph.microsoft.com/mail.read",
 		public Integer expires_in; // 3600,
 		public String access_token; // "eyJ0eXAiOiJKV1Qi...",
 		public String refresh_token; // "AwABAAAAvPM1KaPl..."
@@ -83,9 +87,9 @@ public class MSAuthResponse {
 
 		MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
 		map.add("client_id", CLIENT_ID);
-		map.add("scope", Index.SCOPE);
+		map.add("scope", SCOPE);
 		map.add("code", request.getParameter("code"));
-		map.add("redirect_uri", Index.REDIRECT_URI);
+		map.add("redirect_uri", REDIRECT_URI);
 		map.add("grant_type", "authorization_code");
 		map.add("client_secret", CLIENT_SECRET);
 

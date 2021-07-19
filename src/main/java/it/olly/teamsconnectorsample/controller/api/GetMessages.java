@@ -25,7 +25,7 @@ import org.springframework.web.client.RestTemplate;
 @CrossOrigin
 @RequestMapping({ "/getmessages", "/api/getmessages" }) // TODO leave just /api/getmessages (filtered)
 public class GetMessages {
-	private static final Logger logger = LoggerFactory.getLogger(GetMessages.class);
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
 	private RestTemplate restTemplate;

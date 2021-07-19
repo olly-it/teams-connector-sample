@@ -15,21 +15,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import it.olly.teamsconnectorsample.controller.api.GetMessages;
-
 @RestController
 @RequestMapping({ "/", "/index" })
 public class Index {
-	private static final Logger logger = LoggerFactory.getLogger(GetMessages.class);
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	// CONFIG STUFF
 	@Value("${ms.client_id}")
 	public String CLIENT_ID;
 	@Value("${ms.client_secret}")
 	public String CLIENT_SECRET;
+	@Value("${ms.redirect_uri}")
+	public String REDIRECT_URI;
+	@Value("${ms.scope}")
+	public String SCOPE;
 
-	public static final String REDIRECT_URI = "http://localhost:8080/msauthresponse";
-	public static final String SCOPE = "openid offline_access https://graph.microsoft.com/mail.read";
 	public static final String STATE = "12345";
 
 	@GetMapping(produces = MediaType.TEXT_HTML_VALUE)
