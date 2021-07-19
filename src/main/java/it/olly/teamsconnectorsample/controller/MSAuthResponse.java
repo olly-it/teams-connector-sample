@@ -33,15 +33,16 @@ public class MSAuthResponse {
 	@Value("${ms.client_secret}")
 	public String CLIENT_SECRET;
 
-	public static final String REDIRECT_URI = "http://localhost:8080/msauthresponse";
-	public static final String SCOPE = "https://graph.microsoft.com/mail.read";
+	// public static final String REDIRECT_URI =
+	// "http://localhost:8080/msauthresponse";
+	// public static final String SCOPE = "https://graph.microsoft.com/mail.read";
 
 	@Autowired
 	private RestTemplate restTemplate;
 
 	public static class MSResponseForAccessToken {
 		public String token_type; // " Bearer"
-		public String scope = SCOPE;
+		public String scope = Index.SCOPE;
 		public Integer expires_in; // 3600,
 		public String access_token; // "eyJ0eXAiOiJKV1Qi...",
 		public String refresh_token; // "AwABAAAAvPM1KaPl..."
@@ -82,9 +83,9 @@ public class MSAuthResponse {
 
 		MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
 		map.add("client_id", CLIENT_ID);
-		map.add("scope", SCOPE);
+		map.add("scope", Index.SCOPE);
 		map.add("code", request.getParameter("code"));
-		map.add("redirect_uri", REDIRECT_URI);
+		map.add("redirect_uri", Index.REDIRECT_URI);
 		map.add("grant_type", "authorization_code");
 		map.add("client_secret", CLIENT_SECRET);
 

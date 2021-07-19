@@ -1,4 +1,4 @@
-package it.olly.teamsconnectorsample.controller;
+package it.olly.teamsconnectorsample.controller.api;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,7 +31,7 @@ public class GetMessages {
 	private RestTemplate restTemplate;
 
 	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-	public List<Map> get(@RequestParam String accessToken) throws IOException {
+	public Object get(@RequestParam String accessToken) throws IOException {
 		logger.info("get messages invoked with token = " + accessToken);
 		List<Map> ret = new ArrayList<>();
 
@@ -49,6 +49,10 @@ public class GetMessages {
 			}
 		} catch (Exception e) {
 			logger.error("EEE", e);
+			String emsg = e.getMessage();
+			if (emsg.indexOf(":") > 0) {
+				return emsg.substring(emsg.indexOf(":") + 1).trim();
+			}
 		}
 
 		return ret;
