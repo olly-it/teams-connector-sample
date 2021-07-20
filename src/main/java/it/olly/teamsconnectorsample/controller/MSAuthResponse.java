@@ -104,8 +104,19 @@ public class MSAuthResponse {
 			response.getWriter().println(tokenObj.getBody().access_token);
 			response.getWriter().println("<br><br>REFRESH_TOKEN: <br>");
 			response.getWriter().println(tokenObj.getBody().refresh_token);
-			response.getWriter().println("<br><br><a href=\"/api/getmessages?accessToken="
-					+ tokenObj.getBody().access_token + "\">read messages</a><br>");
+			response.getWriter().println("<br><br>");
+			response.getWriter().println("<a href=\"/api/messages?accessToken=" + tokenObj.getBody().access_token
+					+ "\">read messages</a><br>");
+			response.getWriter().println("<br><a href=\"/api/messages/chats?accessToken="
+					+ tokenObj.getBody().access_token + "\">list chats</a><br>");
+			response.getWriter().println("<br>");
+			response.getWriter().println("<form action='/api/messages/chatmessages' method='get'>");
+			response.getWriter().println(
+					"<input type='hidden' name='accessToken' value='" + tokenObj.getBody().access_token + "'>");
+			response.getWriter().println(
+					"chatId = <input type='text' name='chatId' value='19:206d344c-f515-4da3-9f89-af764f71a50d_8c714f55-36bd-4d6c-b505-c2b130edeadd@unq.gbl.spaces'>");
+			response.getWriter().println("<input type='submit' value='chatmessages'>");
+			response.getWriter().println("</form>");
 		} catch (Exception e) {
 			response.getWriter().println("<b>" + e.getMessage() + "</b>");
 			response.getWriter().println("<pre>");
