@@ -30,12 +30,31 @@ public class TestGetTeamsMessages {
 	@Test
 	void teams_listJoinedTeams() {
 		logger.info("teams_listJoinedTeams()");
-		String accessToken = "eyJ0eXAiOiJKV...";
+		String accessToken = "eyJ0eXAiOiJKV1Qi...";
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 		headers.add("Authorization", "Bearer " + accessToken);
 
 		String getUri = "https://graph.microsoft.com/v1.0/me/joinedTeams";
+		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(headers);
+		try {
+			ResponseEntity<String> msgResponse = restTemplate.exchange(getUri, HttpMethod.GET, entity, String.class);
+			logger.info("msgResponse: " + msgResponse);
+			logger.info("body: " + msgResponse.getBody());
+		} catch (Exception e) {
+			logger.error("EEE", e);
+		}
+	}
+
+	@Test
+	void teams_listChats() {
+		logger.info("teams_listChats()");
+		String accessToken = "eyJ0eXAiOiJKV1Qi...";
+
+		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		headers.add("Authorization", "Bearer " + accessToken);
+
+		String getUri = "https://graph.microsoft.com/beta/me/chats";
 		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(headers);
 		try {
 			ResponseEntity<String> msgResponse = restTemplate.exchange(getUri, HttpMethod.GET, entity, String.class);
