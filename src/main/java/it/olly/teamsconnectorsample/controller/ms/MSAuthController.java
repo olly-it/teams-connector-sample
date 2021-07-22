@@ -1,4 +1,4 @@
-package it.olly.teamsconnectorsample.controller;
+package it.olly.teamsconnectorsample.controller.ms;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -24,7 +24,7 @@ import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/msauthresponse")
-public class MSAuthResponse {
+public class MSAuthController {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	// CONFIG STUFF
@@ -50,6 +50,24 @@ public class MSAuthResponse {
 		public Integer expires_in; // 3600,
 		public String access_token; // "eyJ0eXAiOiJKV1Qi...",
 		public String refresh_token; // "AwABAAAAvPM1KaPl..."
+
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append("MSResponseForAccessToken {token_type=");
+			builder.append(token_type);
+			builder.append(", scope=");
+			builder.append(scope);
+			builder.append(", expires_in=");
+			builder.append(expires_in);
+			builder.append(", access_token=");
+			builder.append(access_token);
+			builder.append(", refresh_token=");
+			builder.append(refresh_token);
+			builder.append("}");
+			return builder.toString();
+		}
+
 	}
 
 	/**
@@ -100,23 +118,7 @@ public class MSAuthResponse {
 					MSResponseForAccessToken.class);
 
 			logger.info("GOT RESPONSE TOKEN: " + tokenObj);
-			response.getWriter().println("<br><br>ACCESS_TOKEN: <br>");
-			response.getWriter().println(tokenObj.getBody().access_token);
-			response.getWriter().println("<br><br>REFRESH_TOKEN: <br>");
-			response.getWriter().println(tokenObj.getBody().refresh_token);
-			response.getWriter().println("<br><br>");
-			response.getWriter().println("<a href=\"/api/messages?accessToken=" + tokenObj.getBody().access_token
-					+ "\">read messages</a><br>");
-			response.getWriter().println("<br><a href=\"/api/messages/chats?accessToken="
-					+ tokenObj.getBody().access_token + "\">list chats</a><br>");
-			response.getWriter().println("<br>");
-			response.getWriter().println("<form action='/api/messages/chatmessages' method='get'>");
-			response.getWriter().println(
-					"<input type='hidden' name='accessToken' value='" + tokenObj.getBody().access_token + "'>");
-			response.getWriter().println(
-					"chatId = <input type='text' name='chatId' value='19:206d344c-f515-4da3-9f89-af764f71a50d_8c714f55-36bd-4d6c-b505-c2b130edeadd@unq.gbl.spaces'>");
-			response.getWriter().println("<input type='submit' value='chatmessages'>");
-			response.getWriter().println("</form>");
+			response.sendRedirect("/loggedIn?accessToken=" + tokenObj.getBody().access_token);
 		} catch (Exception e) {
 			response.getWriter().println("<b>" + e.getMessage() + "</b>");
 			response.getWriter().println("<pre>");

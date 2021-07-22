@@ -1,4 +1,4 @@
-package it.olly.teamsconnectorsample.controller;
+package it.olly.teamsconnectorsample.controller.ms;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/msnotification")
-public class MSNotificationValidator {
+public class MSNotificationController {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@PostMapping(path = "", produces = "text/plain")
