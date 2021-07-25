@@ -39,6 +39,13 @@
 		    <artifactId>azure-identity</artifactId>
 		    <version>[1.2,)</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.hazelcast/hazelcast -->
+		<dependency>
+		    <groupId>com.hazelcast</groupId>
+		    <artifactId>hazelcast</artifactId>
+		    <!-- <version>4.2.1</version> -->
+		</dependency>
 		
 	</dependencies>
 

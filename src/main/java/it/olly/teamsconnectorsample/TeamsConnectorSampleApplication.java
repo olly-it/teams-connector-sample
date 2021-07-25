@@ -6,6 +6,9 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+
 import it.olly.teamsconnectorsample.filter.ApiFilter;
 
 @SpringBootApplication
@@ -13,6 +16,11 @@ public class TeamsConnectorSampleApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(TeamsConnectorSampleApplication.class, args);
+	}
+
+	@Bean
+	public HazelcastInstance hazelcastInstance() {
+		return Hazelcast.newHazelcastInstance();
 	}
 
 	@Bean
