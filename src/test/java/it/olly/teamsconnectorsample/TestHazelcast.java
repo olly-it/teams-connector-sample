@@ -18,17 +18,17 @@ public class TestHazelcast {
 	@Test
 	void simpleTestHazelcast() {
 		System.out.println("simpleTestHazelcast");
-		IQueue<Object> queue = hazelcast.getQueue("myQueue-test");
-		queue.addItemListener(new ItemListener<Object>() {
+		IQueue<String> queue = hazelcast.getQueue("myQueue-test");
+		queue.addItemListener(new ItemListener<String>() {
 
 			@Override
-			public void itemRemoved(ItemEvent<Object> item) {
+			public void itemRemoved(ItemEvent<String> item) {
 				System.out.println("itemRemoved: " + item);
 
 			}
 
 			@Override
-			public void itemAdded(ItemEvent<Object> item) {
+			public void itemAdded(ItemEvent<String> item) {
 				System.out.println("itemAdded: " + item);
 				queue.remove(item.getItem());
 			}

@@ -7,6 +7,8 @@ import java.nio.charset.Charset;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.olly.teamsconnectorsample.service.ms.MSClientHelper;
-import it.olly.utils.JsonArray;
-import it.olly.utils.JsonObject;
 
 @RestController
 @RequestMapping("/")
@@ -70,16 +70,16 @@ public class PageHTMLController {
 		 * chats) { response.getWriter() .println(chat.id + " [" + chat.topic + "] #" +
 		 * chat.chatType + " - " + chat.members + "<BR>"); }
 		 */
-		JsonObject json = msClientHelper.lowLevelGet("/beta/me/chats", accessToken);
-		JsonArray chats = json.getJsonArray("value");
+		JSONObject json = msClientHelper.lowLevelGet("/beta/me/chats", accessToken);
+		JSONArray chats = json.getJSONArray("value");
 		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
 				+ "<th>id</th>" //
 				+ "<th>topic</th>" //
 				+ "<th>lastUpdatedDateTime</th>" //
 				+ "<th>chatType</th>" //
 				+ "</tr>");
-		for (int i = 0; i < chats.size(); i++) {
-			JsonObject chatJO = chats.getJsonObject(i);
+		for (int i = 0; i < chats.length(); i++) {
+			JSONObject chatJO = chats.getJSONObject(i);
 			String id = chatJO.getString("id");
 			String topic = chatJO.getString("topic");
 			String lastUpdatedDateTime = chatJO.getString("lastUpdatedDateTime");
@@ -115,20 +115,20 @@ public class PageHTMLController {
 	public void inChat(@RequestParam String accessToken, @RequestParam String chatId, HttpServletResponse response)
 			throws IOException {
 		response.getWriter().println("<html><body>");
-		JsonObject json = msClientHelper.lowLevelGet("/beta/me/chats/" + chatId + "/messages", accessToken);
-		JsonArray messages = json.getJsonArray("value");
+		JSONObject json = msClientHelper.lowLevelGet("/beta/me/chats/" + chatId + "/messages", accessToken);
+		JSONArray messages = json.getJSONArray("value");
 		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
 				+ "<th>id</th>" //
 				+ "<th>createdDateTime</th>" //
 				+ "<th>from</th>" //
 				+ "<th>body</th>" //
 				+ "</tr>");
-		for (int i = 0; i < messages.size(); i++) {
-			JsonObject msgJO = messages.getJsonObject(i);
+		for (int i = 0; i < messages.length(); i++) {
+			JSONObject msgJO = messages.getJSONObject(i);
 			String id = msgJO.getString("id");
 			String createdDateTime = msgJO.getString("createdDateTime");
-			String from = msgJO.getJsonObject("from").getJsonObject("user").getString("displayName");
-			JsonObject body = msgJO.getJsonObject("body");
+			String from = msgJO.getJSONObject("from").getJSONObject("user").getString("displayName");
+			JSONObject body = msgJO.getJSONObject("body");
 
 			response.getWriter().println("<tr>" //
 					+ "<td>" + id + "</a></td>" //

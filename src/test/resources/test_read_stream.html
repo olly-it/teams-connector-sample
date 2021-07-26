@@ -1,0 +1,32 @@
+<html>
+<head>
+    <title>test for stream - chat #1</title>
+</head>
+<body>
+    <script>
+        function sendMsg() {
+            var url = "http://localhost:8080/api/stream/test_put?chatId=1&message=this+is+my+test_"+Math.random();
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("GET", url, true);
+            xmlHttp.send( null );
+        }
+        //read the querystring parameter
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const chatId = urlParams.get('chatId');
+        //attach to BE service
+        const evtSource = new EventSource("//localhost:8080/api/stream/chat?chatId="+chatId, { withCredentials: false } );
+        evtSource.onmessage = function(event) {
+            console.log("got event!", event);
+            msg = JSON.parse(event.data);
+            console.log("msg.text = ", msg.text);
+            var p = document.createElement("p");
+            p.innerText = msg.text;
+            document.body.appendChild(p);
+        }
+    </script>
+    Invoke me with chatId, ex: //test_read_stream.html?chatId=1<br>
+	    Queue a test message with: <a href="#" onclick="sendMsg();">this</a><br>
+    <hr>
+</body>
+</html>
