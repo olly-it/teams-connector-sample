@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hazelcast.collection.IQueue;
 import com.hazelcast.core.HazelcastInstance;
 
+import it.olly.teamsconnectorsample.service.ms.MSClientHelper;
+
 @RestController
 @CrossOrigin
 @RequestMapping("/api/stream")
@@ -27,8 +29,12 @@ public class StreamController {
 	@Autowired
 	private HazelcastInstance hazelcast;
 
+	@Autowired
+	private MSClientHelper msClientHelper;
+
 	@GetMapping(path = "/chat")
-	public void getChatStream(@RequestParam String chatId, HttpServletResponse response) throws IOException {
+	public void getChatStream(@RequestParam String chatId, @RequestParam String accessToken,
+			HttpServletResponse response) throws IOException {
 		response.setContentType("text/event-stream");
 		response.setCharacterEncoding("utf-8");
 		logger.info("getChatStream [" + chatId + "] invoked");
@@ -39,7 +45,18 @@ public class StreamController {
 				poll = queue.poll(60, TimeUnit.SECONDS);
 				if (poll != null) {
 					logger.info("getChatStream [" + chatId + "] - GOT MESSAGE");
-					response.getWriter().println("data: " + poll);
+					JSONObject notif = new JSONObject(poll);
+
+					// ask microsoft single chat Message
+					JSONObject msgJO = msClientHelper.lowLevelGet(
+							"/beta/me/chats/" + chatId + "/messages/" + notif.getString("messageId"), accessToken);
+					JSONObject body = msgJO.getJSONObject("body");
+
+					// reply to browser
+					JSONObject reply = new JSONObject();
+					reply.put("text", body);
+
+					response.getWriter().println("data: " + reply.toString());
 					response.getWriter().println();
 					response.getWriter().flush();
 				}

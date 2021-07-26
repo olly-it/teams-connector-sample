@@ -81,9 +81,9 @@ public class PageHTMLController {
 		for (int i = 0; i < chats.length(); i++) {
 			JSONObject chatJO = chats.getJSONObject(i);
 			String id = chatJO.getString("id");
-			String topic = chatJO.getString("topic");
-			String lastUpdatedDateTime = chatJO.getString("lastUpdatedDateTime");
-			String chatType = chatJO.getString("chatType");
+			String topic = chatJO.optString("topic");
+			String lastUpdatedDateTime = chatJO.optString("lastUpdatedDateTime");
+			String chatType = chatJO.optString("chatType");
 			String href = "/inChat?accessToken=" + accessToken + "&chatId=" + id;
 			response.getWriter().println("<tr>" //
 					+ "<td><a href=\"" + href + "\">" + id + "</a></td>" //
@@ -127,7 +127,9 @@ public class PageHTMLController {
 			JSONObject msgJO = messages.getJSONObject(i);
 			String id = msgJO.getString("id");
 			String createdDateTime = msgJO.getString("createdDateTime");
-			String from = msgJO.getJSONObject("from").getJSONObject("user").getString("displayName");
+			// sometimes from is null
+			JSONObject fromJO = msgJO.optJSONObject("from");
+			String from = fromJO != null ? fromJO.getJSONObject("user").getString("displayName") : "[empty]";
 			JSONObject body = msgJO.getJSONObject("body");
 
 			response.getWriter().println("<tr>" //
@@ -137,7 +139,30 @@ public class PageHTMLController {
 					+ "<td>" + body + "</a></td>" //
 					+ "</tr>");
 		}
-		response.getWriter().println("</tr></table>");
+		response.getWriter().println("</table><hr>");
+
+		// realtime stuff
+		String streamUrl = "/api/stream/chat?chatId=" + chatId + "&accessToken=" + accessToken;
+		response.getWriter().println("" //
+				+ "<script>" //
+				+ "        const evtSource = new EventSource('" + streamUrl + "', { withCredentials: false } );\n" //
+				+ "        evtSource.onmessage = function(event) {\n" //
+				+ "            var msg = JSON.parse(event.data);\n" //
+				+ "            var p = document.createElement('p');\n" //
+				+ "            p.innerText = JSON.stringify(msg.text);\n" //
+				+ "            document.getElementById('realtime').appendChild(p);\n" //
+				+ "        }\n" // s
+				+ "</script>");
+		response.getWriter().println("<div id='realtime'></div>");
+
+		// subscribe to webhook TODO check if not already subscribed + manage expiration
+		String webhookResource = "/chats/" + chatId + "/messages";
+		try {
+			msClientHelper.subscribeToWebhook(webhookResource, accessToken);
+		} catch (Exception e) {
+			logger.warn("already subscribed?", e);
+		}
+
 		response.getWriter().println("</body></html>");
 	}
 }

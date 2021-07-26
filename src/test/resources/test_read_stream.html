@@ -11,8 +11,7 @@
             xmlHttp.send( null );
         }
         //read the querystring parameter
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
+        const urlParams = new URLSearchParams(window.location.search);
         const chatId = urlParams.get('chatId');
         //attach to BE service
         const evtSource = new EventSource("//localhost:8080/api/stream/chat?chatId="+chatId, { withCredentials: false } );
@@ -21,12 +20,13 @@
             msg = JSON.parse(event.data);
             console.log("msg.text = ", msg.text);
             var p = document.createElement("p");
-            p.innerText = msg.text;
-            document.body.appendChild(p);
+            p.innerText = JSON.stringify(msg.text);
+            document.getElementById("realtime").appendChild(p);
         }
     </script>
     Invoke me with chatId, ex: //test_read_stream.html?chatId=1<br>
 	    Queue a test message with: <a href="#" onclick="sendMsg();">this</a><br>
     <hr>
+    <div id="realtime"></div>
 </body>
 </html>
