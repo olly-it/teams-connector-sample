@@ -9,10 +9,12 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -23,7 +25,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import com.hazelcast.core.HazelcastInstance;
 import com.microsoft.graph.authentication.IAuthenticationProvider;
 import com.microsoft.graph.models.User;
 import com.microsoft.graph.requests.GraphServiceClient;
@@ -42,8 +43,8 @@ public class MSClientHelper {
 	// ---------------------------------------------- 2021-07-20 T 17:00:00.0000000Z
 	private final static String MS_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
-	@Autowired
-	private HazelcastInstance hazelcast;
+	@Value("${ms.notification.receiver}")
+	public String notificationResponseUrl;
 
 	@Autowired
 	private RestTemplate restTemplate;
@@ -61,9 +62,47 @@ public class MSClientHelper {
 
 	/**
 	 * 
+	 * @param api         e.g. "/beta/chats/{chat-id}/messages"
+	 * @param accessToken
+	 * @return JSONObject
+	 */
+	public JSONObject lowLevelPost(String api, String accessToken, JSONObject body) {
+		logger.info("lowLevelPost invoked [" + api + "] with token = " + accessToken);
+
+		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		headers.add("Authorization", "Bearer " + accessToken);
+
+		String uri = GRAPHAPI_HOST + api;
+
+		// body
+		String bodyS = body.toString();
+		logger.info("posting - " + bodyS);
+
+		// prepare request
+		RequestEntity<String> entity = RequestEntity //
+				.post(uri) //
+				.header("Authorization", "Bearer " + accessToken) //
+				.contentType(MediaType.APPLICATION_JSON) //
+				.body(bodyS);
+
+		// execute
+		ResponseEntity<String> msgResponse = restTemplate.exchange(entity, String.class);
+
+		logger.info("msgResponse: " + msgResponse);
+		logger.info("msgResponse.body: " + msgResponse.getBody());
+		try {
+			return new JSONObject(msgResponse.getBody());
+		} catch (Exception e) {
+			logger.error("unable to convert json", e);
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * 
 	 * @param api         e.g. "/beta/me/chats"
 	 * @param accessToken
-	 * @return a jsonElement (can be a primitive, an object or an array
+	 * @return JSONObject
 	 */
 	public JSONObject lowLevelGet(String api, String accessToken) {
 		logger.info("lowLevelGet invoked [" + api + "] with token = " + accessToken);
@@ -90,6 +129,37 @@ public class MSClientHelper {
 		}
 	}
 
+	public boolean alreadySubscribedToWebhook(String webhookResource, String accessToken) {
+		logger.info("AlreadySubscribedToWebhook? " + webhookResource);
+		String uri = GRAPHAPI_HOST + "/v1.0/subscriptions";
+
+		logger.info("get request");
+
+		// prepare request
+		RequestEntity<Void> entity = RequestEntity //
+				.get(uri) //
+				.header("Authorization", "Bearer " + accessToken).build();
+
+		// execute get
+		ResponseEntity<String> msgResponse = restTemplate.exchange(entity, String.class);
+
+		logger.info("msgResponse: " + msgResponse);
+		logger.info("msgResponse.body: " + msgResponse.getBody());
+
+		JSONObject json = new JSONObject(msgResponse.getBody());
+		JSONArray jsonArray = json.getJSONArray("value");
+		for (int i = 0; i < jsonArray.length(); i++) {
+			JSONObject element = jsonArray.optJSONObject(i);
+			if (element != null) {
+				String resource = element.optString("resource");
+				if (resource != null && resource.equals(webhookResource))
+					return true;
+			}
+
+		}
+		return false;
+	}
+
 	public void subscribeToWebhook(String webhookResource, String accessToken) {
 		logger.info("subscribe to webhook: " + webhookResource);
 		String uri = GRAPHAPI_HOST + "/v1.0/subscriptions";
@@ -97,20 +167,20 @@ public class MSClientHelper {
 		// body
 		JSONObject body = new JSONObject();
 		body.put("changeType", "created");
-		body.put("notificationUrl", "https://fab36268f258.ngrok.io/msnotification");
+		body.put("notificationUrl", notificationResponseUrl);
 		body.put("resource", webhookResource);
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.MINUTE, 10);
 		body.put("expirationDateTime", toMSDateTime(cal.getTime()));
-		String bodys = body.toString();
-		logger.info("posting - " + body);
+		String bodyS = body.toString();
+		logger.info("posting - " + bodyS);
 
 		// prepare request
 		RequestEntity<String> entity = RequestEntity //
 				.post(uri) //
 				.header("Authorization", "Bearer " + accessToken) //
 				.contentType(MediaType.APPLICATION_JSON) //
-				.body(bodys);
+				.body(bodyS);
 
 		// execute
 		ResponseEntity<String> msgResponse = restTemplate.exchange(entity, String.class);
