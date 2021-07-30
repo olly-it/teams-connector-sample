@@ -1,0 +1,20 @@
+<html>
+<head>
+    <title>test send msg</title>
+</head>
+<body>
+<script>
+function sendMsg() {
+	var msg_text = document.getElementById('msg_text');
+    var url = "/api/chats/send?accessToken=1&chatId=1&message="+encodeURIComponent(msg_text.value);
+    alert(url);
+    msg_text.value="";
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open("GET", url, true);
+    xmlHttp.send(null);
+}
+</script>
+<input type="text" id="msg_text" size="20" name="message" value=""/>
+<input type="button" value="send" onclick="sendMsg();"/>
+</body>
+</html>

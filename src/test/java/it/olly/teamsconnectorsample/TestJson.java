@@ -14,6 +14,9 @@ public class TestJson {
 		jo = new JSONObject(json);
 		String txt = jo.getString("text");
 		System.out.println("TXT = " + txt);
+
+		JSONObject json2 = new JSONObject().put("body", new JSONObject().put("content", "text example"));
+		System.out.println("2: " + json2);
 	}
 
 }

@@ -57,6 +57,7 @@ public class MSNotificationController {
 						JSONObject chatMsgJson = new JSONObject();
 						chatMsgJson.put("messageId", messageId);
 						hazelcast.getQueue("chat|" + chatId).add(chatMsgJson.toString());
+						logger.info("----------> ENQUEUED MESSAGE id: " + messageId);
 					}
 				}
 			}

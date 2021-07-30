@@ -50,15 +50,19 @@ public class StreamController {
 					// ask microsoft single chat Message
 					JSONObject msgJO = msClientHelper.lowLevelGet(
 							"/beta/me/chats/" + chatId + "/messages/" + notif.getString("messageId"), accessToken);
+					JSONObject fromJO = msgJO.optJSONObject("from");
+					String from = fromJO != null ? fromJO.getJSONObject("user").getString("displayName") : "[empty]";
 					JSONObject body = msgJO.getJSONObject("body");
 
 					// reply to browser
 					JSONObject reply = new JSONObject();
-					reply.put("text", body);
+					reply.put("from", from);
+					reply.put("text", body.optString("content"));
 
 					response.getWriter().println("data: " + reply.toString());
 					response.getWriter().println();
 					response.getWriter().flush();
+					logger.info("======> chatStream [" + reply + "] written");
 				}
 			} while (poll != null);
 		} catch (InterruptedException e) {

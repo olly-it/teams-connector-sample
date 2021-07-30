@@ -3,6 +3,7 @@ package it.olly.teamsconnectorsample.controller;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.Date;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -115,8 +116,58 @@ public class PageHTMLController {
 	public void inChat(@RequestParam String accessToken, @RequestParam String chatId, HttpServletResponse response)
 			throws IOException {
 		response.getWriter().println("<html><body>");
+		response.getWriter().println("<b>" + (new Date()) + " - webhook exp. 10'</b><br>");
 		JSONObject json = msClientHelper.lowLevelGet("/beta/me/chats/" + chatId + "/messages", accessToken);
 		JSONArray messages = json.getJSONArray("value");
+
+		// send part
+		response.getWriter().println(""//
+				+ "<script>\n" //
+				+ "function sendMsg() {\n"//
+				+ "	var msg_text = document.getElementById('msg_text');\n"//
+				+ "    var url = \"/api/chats/send?accessToken=" + accessToken + "&chatId=" + chatId
+				+ "&message=\"+encodeURIComponent(msg_text.value);\n"//
+				+ "    msg_text.value=\"\";\n"//
+				+ "    var xmlHttp = new XMLHttpRequest();\n"//
+				+ "    xmlHttp.open(\"GET\", url, true);\n"//
+				+ "    xmlHttp.send(null);\n"//
+				+ "}\n" + "</script>\n");
+		response.getWriter().println("<input type=\"text\" id=\"msg_text\" size=\"20\" name=\"message\" value=\"\"/>");
+		response.getWriter().println("<input type=\"button\" value=\"send\" onclick=\"sendMsg();\"/>");
+		response.getWriter().println("<hr>");
+
+		// realtime stuff
+		String streamUrl = "/api/stream/chat?chatId=" + chatId + "&accessToken=" + accessToken;
+		response.getWriter().println("" //
+				+ "<script>" //
+				+ "        const evtSource = new EventSource('" + streamUrl + "', { withCredentials: false } );\n" //
+				+ "        evtSource.onmessage = function(event) {\n" //
+				+ "            console.log('got event', event);\n" //
+				+ "            var p = document.createElement('p');\n" //
+				+ "            var json = JSON.parse(event.data);\n" //
+				+ "            p.innerHTML = json.from+\" - \"+json.text;\n" //
+				+ "            document.getElementById('realtime').appendChild(p);\n" //
+				+ "        }\n" // s
+				+ "</script>");
+		response.getWriter().println("<div id='realtime'></div>");
+		// subscribe to webhook TODO check if not already subscribed + manage expiration
+		String webhookResource = "/chats/" + chatId + "/messages";
+		try {
+			if (msClientHelper.alreadySubscribedToWebhook(webhookResource, accessToken)) {
+				logger.info("already subscribed to webhook");
+				response.getWriter()
+						.println("<br><b>already subscribed to webhook - will i receive notifications?</b>");
+			} else {
+				msClientHelper.subscribeToWebhook(webhookResource, accessToken);
+				response.getWriter().println("<br><b>subscribed to webhook: " + webhookResource + "</b>");
+			}
+		} catch (Exception e) {
+			logger.warn("already subscribed?", e);
+			response.getWriter().println("<br><b>can't subscribe to webhook: " + e.getMessage() + "</b>");
+		}
+		response.getWriter().println("<br><hr>");
+
+		// message list
 		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
 				+ "<th>id</th>" //
 				+ "<th>createdDateTime</th>" //
@@ -133,35 +184,13 @@ public class PageHTMLController {
 			JSONObject body = msgJO.getJSONObject("body");
 
 			response.getWriter().println("<tr>" //
-					+ "<td>" + id + "</a></td>" //
-					+ "<td>" + createdDateTime + "</a></td>" //
-					+ "<td>" + from + "</a></td>" //
-					+ "<td>" + body + "</a></td>" //
+					+ "<td>" + id + "</td>" //
+					+ "<td>" + createdDateTime + "</td>" //
+					+ "<td>" + from + "</td>" //
+					+ "<td>" + body.optString("content") + "</td>" //
 					+ "</tr>");
 		}
-		response.getWriter().println("</table><hr>");
-
-		// realtime stuff
-		String streamUrl = "/api/stream/chat?chatId=" + chatId + "&accessToken=" + accessToken;
-		response.getWriter().println("" //
-				+ "<script>" //
-				+ "        const evtSource = new EventSource('" + streamUrl + "', { withCredentials: false } );\n" //
-				+ "        evtSource.onmessage = function(event) {\n" //
-				+ "            var msg = JSON.parse(event.data);\n" //
-				+ "            var p = document.createElement('p');\n" //
-				+ "            p.innerText = JSON.stringify(msg.text);\n" //
-				+ "            document.getElementById('realtime').appendChild(p);\n" //
-				+ "        }\n" // s
-				+ "</script>");
-		response.getWriter().println("<div id='realtime'></div>");
-
-		// subscribe to webhook TODO check if not already subscribed + manage expiration
-		String webhookResource = "/chats/" + chatId + "/messages";
-		try {
-			msClientHelper.subscribeToWebhook(webhookResource, accessToken);
-		} catch (Exception e) {
-			logger.warn("already subscribed?", e);
-		}
+		response.getWriter().println("</table>");
 
 		response.getWriter().println("</body></html>");
 	}
