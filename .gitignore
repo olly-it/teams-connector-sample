@@ -3,3 +3,5 @@
 .project
 .settings
 _olly.properties
+_default.properties
+_prod.properties
