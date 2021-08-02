@@ -42,6 +42,7 @@ public class MSClientHelper {
 	private final static String GRAPHAPI_HOST = "https://graph.microsoft.com";
 	// ---------------------------------------------- 2021-07-20 T 17:00:00.0000000Z
 	private final static String MS_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+	public final static int WEBHOOK_MINUTES_EXPIRATION = 5;
 
 	@Value("${ms.notification.receiver}")
 	public String notificationResponseUrl;
@@ -170,7 +171,7 @@ public class MSClientHelper {
 		body.put("notificationUrl", notificationResponseUrl);
 		body.put("resource", webhookResource);
 		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.MINUTE, 10);
+		cal.add(Calendar.MINUTE, WEBHOOK_MINUTES_EXPIRATION);
 		body.put("expirationDateTime", toMSDateTime(cal.getTime()));
 		String bodyS = body.toString();
 		logger.info("posting - " + bodyS);

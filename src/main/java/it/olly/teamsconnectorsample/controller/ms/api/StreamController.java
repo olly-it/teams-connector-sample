@@ -1,4 +1,4 @@
-package it.olly.teamsconnectorsample.controller.api;
+package it.olly.teamsconnectorsample.controller.ms.api;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -69,6 +69,49 @@ public class StreamController {
 			logger.error("getChatStream [" + chatId + " with long poll - interrupted", e);
 		}
 		logger.info("getChatStream [" + chatId + "] EXIT");
+	}
+
+	@GetMapping(path = "/channel")
+	public void getChannelStream(@RequestParam String teamId, @RequestParam String channelId,
+			@RequestParam String accessToken, HttpServletResponse response) throws IOException {
+		response.setContentType("text/event-stream");
+		response.setCharacterEncoding("utf-8");
+		logger.info("getChannelStream [" + channelId + "] invoked");
+		IQueue<String> queue = hazelcast.getQueue("channel|" + teamId + "|" + channelId);
+		try {
+			String poll = null;
+			do {
+				poll = queue.poll(60, TimeUnit.SECONDS);
+				if (poll != null) {
+					logger.info("getChannelStream [" + channelId + "] - GOT MESSAGE");
+					JSONObject notif = new JSONObject(poll);
+
+					String messageId = notif.getString("messageId");
+					String replyId = notif.getString("replyId");
+
+					// ask microsoft single channel Message
+					String url = "/beta/teams/" + teamId + "/channels/" + channelId + "/messages/" + messageId
+							+ "/replies/" + replyId;
+					JSONObject msgJO = msClientHelper.lowLevelGet(url, accessToken);
+					JSONObject fromJO = msgJO.optJSONObject("from");
+					String from = fromJO != null ? fromJO.getJSONObject("user").getString("displayName") : "[empty]";
+					JSONObject body = msgJO.getJSONObject("body");
+
+					// reply to browser
+					JSONObject reply = new JSONObject();
+					reply.put("from", from);
+					reply.put("text", "[" + messageId + "] -> " + body.optString("content"));
+
+					response.getWriter().println("data: " + reply.toString());
+					response.getWriter().println();
+					response.getWriter().flush();
+					logger.info("======> channelStream [" + reply + "] written");
+				}
+			} while (poll != null);
+		} catch (InterruptedException e) {
+			logger.error("getChannelStream [" + channelId + " with long poll - interrupted", e);
+		}
+		logger.info("getChannelStream [" + channelId + "] EXIT");
 	}
 
 	@Deprecated

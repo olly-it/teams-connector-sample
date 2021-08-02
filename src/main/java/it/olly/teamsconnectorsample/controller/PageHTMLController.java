@@ -66,11 +66,6 @@ public class PageHTMLController {
 		response.getWriter().println(accessToken);
 		response.getWriter().println("<br><br>CHATS:<BR>");
 
-		/*
-		 * List<Chat> chats = msClientHelper.getChats(accessToken); for (Chat chat :
-		 * chats) { response.getWriter() .println(chat.id + " [" + chat.topic + "] #" +
-		 * chat.chatType + " - " + chat.members + "<BR>"); }
-		 */
 		JSONObject json = msClientHelper.lowLevelGet("/beta/me/chats", accessToken);
 		JSONArray chats = json.getJSONArray("value");
 		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
@@ -95,20 +90,56 @@ public class PageHTMLController {
 		}
 		response.getWriter().println("</tr></table><br>");
 
-		response.getWriter().println("<br><br>CHANNELS:<BR>");
-		// TODO get all channels
+		response.getWriter().println("<br><br>TEAMS ( -&gt; CHANNELS):<BR>");
+		// get all teams
+		json = msClientHelper.lowLevelGet("/beta/me/joinedTeams", accessToken);
+		JSONArray teams = json.getJSONArray("value");
+		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
+				+ "<th>id</th>" //
+				+ "<th>displayName</th>" //
+				+ "<th>description</th>" //
+				+ "</tr>");
+		for (int i = 0; i < teams.length(); i++) {
+			JSONObject teamJO = teams.getJSONObject(i);
+			String id = teamJO.getString("id");
+			String displayName = teamJO.optString("displayName");
+			String description = teamJO.optString("description");
+			String href = "/inTeam?accessToken=" + accessToken + "&teamId=" + id;
+			response.getWriter().println("<tr>" //
+					+ "<td><a href=\"" + href + "\">" + id + "</a></td>" //
+					+ "<td>" + displayName + "</td>" //
+					+ "<td>" + description + "</td>" //
+					+ "</tr>");
+		}
+		response.getWriter().println("</tr></table><br>");
 
-		/*
-		 * response.getWriter().
-		 * println("<form action='/api/messages/chatmessages' method='get'>");
-		 * response.getWriter().
-		 * println("<input type='hidden' name='accessToken' value='" + accessToken +
-		 * "'>"); response.getWriter().println(
-		 * "chatId = <input type='text' name='chatId' value='19:206d344c-f515-4da3-9f89-af764f71a50d_8c714f55-36bd-4d6c-b505-c2b130edeadd@unq.gbl.spaces'>"
-		 * );
-		 * response.getWriter().println("<input type='submit' value='chatmessages'>");
-		 * response.getWriter().println("</form>");
-		 */
+		response.getWriter().println("</body></html>");
+	}
+
+	@GetMapping(path = "/inTeam", produces = MediaType.TEXT_HTML_VALUE)
+	public void inTeam(@RequestParam String accessToken, @RequestParam String teamId, HttpServletResponse response)
+			throws IOException {
+		response.getWriter().println("<html><body>");
+		response.getWriter().println("<br><br>CHANNELS:<BR>");
+
+		JSONObject json = msClientHelper.lowLevelGet("/beta/teams/" + teamId + "/channels", accessToken);
+		JSONArray channels = json.getJSONArray("value");
+		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
+				+ "<th>id</th>" //
+				+ "<th>displayName</th>" //
+				+ "</tr>");
+		for (int i = 0; i < channels.length(); i++) {
+			JSONObject channelJO = channels.getJSONObject(i);
+			String id = channelJO.getString("id");
+			String displayName = channelJO.optString("displayName");
+			String href = "/inTeamInChannel?accessToken=" + accessToken + "&teamId=" + teamId + "&channelId=" + id;
+			response.getWriter().println("<tr>" //
+					+ "<td><a href=\"" + href + "\">" + id + "</a></td>" //
+					+ "<td>" + displayName + "</td>" //
+					+ "</tr>");
+		}
+		response.getWriter().println("</tr></table><br>");
+
 		response.getWriter().println("</body></html>");
 	}
 
@@ -116,7 +147,8 @@ public class PageHTMLController {
 	public void inChat(@RequestParam String accessToken, @RequestParam String chatId, HttpServletResponse response)
 			throws IOException {
 		response.getWriter().println("<html><body>");
-		response.getWriter().println("<b>" + (new Date()) + " - webhook exp. 10'</b><br>");
+		response.getWriter().println(
+				"<b>" + (new Date()) + " - webhook exp. " + MSClientHelper.WEBHOOK_MINUTES_EXPIRATION + "'</b><br>");
 		JSONObject json = msClientHelper.lowLevelGet("/beta/me/chats/" + chatId + "/messages", accessToken);
 		JSONArray messages = json.getJSONArray("value");
 
@@ -147,11 +179,98 @@ public class PageHTMLController {
 				+ "            var json = JSON.parse(event.data);\n" //
 				+ "            p.innerHTML = json.from+\" - \"+json.text;\n" //
 				+ "            document.getElementById('realtime').appendChild(p);\n" //
-				+ "        }\n" // s
+				+ "        }\n" //
 				+ "</script>");
 		response.getWriter().println("<div id='realtime'></div>");
 		// subscribe to webhook TODO check if not already subscribed + manage expiration
 		String webhookResource = "/chats/" + chatId + "/messages";
+		try {
+			if (msClientHelper.alreadySubscribedToWebhook(webhookResource, accessToken)) {
+				logger.info("already subscribed to webhook");
+				response.getWriter()
+						.println("<br><b>already subscribed to webhook - will i receive notifications?</b>");
+			} else {
+				msClientHelper.subscribeToWebhook(webhookResource, accessToken);
+				response.getWriter().println("<br><b>subscribed to webhook: " + webhookResource + "</b>");
+			}
+		} catch (Exception e) {
+			logger.warn("already subscribed?", e);
+			response.getWriter().println("<br><b>can't subscribe to webhook: " + e.getMessage() + "</b>");
+		}
+		response.getWriter().println("<br><hr>");
+
+		// message list
+		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
+				+ "<th>id</th>" //
+				+ "<th>createdDateTime</th>" //
+				+ "<th>from</th>" //
+				+ "<th>body</th>" //
+				+ "</tr>");
+		for (int i = 0; i < messages.length(); i++) {
+			JSONObject msgJO = messages.getJSONObject(i);
+			String id = msgJO.getString("id");
+			String createdDateTime = msgJO.getString("createdDateTime");
+			// sometimes from is null
+			JSONObject fromJO = msgJO.optJSONObject("from");
+			String from = fromJO != null ? fromJO.getJSONObject("user").getString("displayName") : "[empty]";
+			JSONObject body = msgJO.getJSONObject("body");
+
+			response.getWriter().println("<tr>" //
+					+ "<td>" + id + "</td>" //
+					+ "<td>" + createdDateTime + "</td>" //
+					+ "<td>" + from + "</td>" //
+					+ "<td>" + body.optString("content") + "</td>" //
+					+ "</tr>");
+		}
+		response.getWriter().println("</table>");
+
+		response.getWriter().println("</body></html>");
+	}
+
+	@GetMapping(path = "/inTeamInChannel", produces = MediaType.TEXT_HTML_VALUE)
+	public void inTeamInChannel(@RequestParam String accessToken, @RequestParam String teamId,
+			@RequestParam String channelId, HttpServletResponse response) throws IOException {
+		response.getWriter().println("<html><body>");
+		response.getWriter().println(
+				"<b>" + (new Date()) + " - webhook exp. " + MSClientHelper.WEBHOOK_MINUTES_EXPIRATION + "'</b><br>");
+		JSONObject json = msClientHelper.lowLevelGet("/beta/teams/" + teamId + "/channels/" + channelId + "/messages",
+				accessToken);
+		JSONArray messages = json.getJSONArray("value");
+
+		// send part
+		response.getWriter().println(""//
+				+ "<script>\n" //
+				+ "function sendMsg() {\n"//
+				+ "	var msg_text = document.getElementById('msg_text');\n"//
+				+ "    var url = \"/api/channels/send?accessToken=" + accessToken + "&teamId=" + teamId + "&channelId="
+				+ channelId + "&message=\"+encodeURIComponent(msg_text.value);\n"//
+				+ "    msg_text.value=\"\";\n"//
+				+ "    var xmlHttp = new XMLHttpRequest();\n"//
+				+ "    xmlHttp.open(\"GET\", url, true);\n"//
+				+ "    xmlHttp.send(null);\n"//
+				+ "}\n" + "</script>\n");
+		response.getWriter().println("<input type=\"text\" id=\"msg_text\" size=\"20\" name=\"message\" value=\"\"/>");
+		response.getWriter().println("<input type=\"button\" value=\"send\" onclick=\"sendMsg();\"/>");
+		response.getWriter().println("<hr>");
+
+		// realtime stuff
+		String streamUrl = "/api/stream/channel?teamId=" + teamId + "&channelId=" + channelId + "&accessToken="
+				+ accessToken;
+		response.getWriter().println("" //
+				+ "<script>" //
+				+ "        const evtSource = new EventSource('" + streamUrl + "', { withCredentials: false } );\n" //
+				+ "        evtSource.onmessage = function(event) {\n" //
+				+ "            console.log('got event', event);\n" //
+				+ "            var p = document.createElement('p');\n" //
+				+ "            var json = JSON.parse(event.data);\n" //
+				+ "            p.innerHTML = json.from+\" - \"+json.text;\n" //
+				+ "            document.getElementById('realtime').appendChild(p);\n" //
+				+ "        }\n" //
+				+ "</script>");
+		response.getWriter().println("<div id='realtime'></div>");
+
+		// subscribe to webhook TODO check if not already subscribed + manage expiration
+		String webhookResource = "/teams/" + teamId + "/channels/" + channelId + "/messages";
 		try {
 			if (msClientHelper.alreadySubscribedToWebhook(webhookResource, accessToken)) {
 				logger.info("already subscribed to webhook");

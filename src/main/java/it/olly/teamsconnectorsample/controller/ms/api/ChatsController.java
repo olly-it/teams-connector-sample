@@ -1,4 +1,4 @@
-package it.olly.teamsconnectorsample.controller.api;
+package it.olly.teamsconnectorsample.controller.ms.api;
 
 import java.io.IOException;
 

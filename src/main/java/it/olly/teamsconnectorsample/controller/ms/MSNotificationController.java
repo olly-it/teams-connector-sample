@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hazelcast.collection.IQueue;
 import com.hazelcast.core.HazelcastInstance;
 
 @RestController
@@ -58,6 +59,32 @@ public class MSNotificationController {
 						chatMsgJson.put("messageId", messageId);
 						hazelcast.getQueue("chat|" + chatId).add(chatMsgJson.toString());
 						logger.info("----------> ENQUEUED MESSAGE id: " + messageId);
+					}
+				} else if (res.startsWith("teams('")) {
+					// teams('4287a52b-3b51-4295-906e-47422b750326')/channels('19:199b8550336d4140b09bce39cf0b74bf@thread.tacv2')/messages('1627900790276')/replies('1627913024657')
+					res = res.substring(7);
+					String teamId = res.substring(0, res.indexOf("')"));
+					res = res.substring(res.indexOf("')") + 2);
+					if (res.startsWith("/channels('")) {
+						res = res.substring(11);
+						String channelId = res.substring(0, res.indexOf("')"));
+						res = res.substring(res.indexOf("')") + 2);
+						if (res.startsWith("/messages('")) {
+							res = res.substring(11);
+							String messageId = res.substring(0, res.indexOf("')"));
+							res = res.substring(res.indexOf("')") + 2);
+							if (res.startsWith("/replies('")) {
+								res = res.substring(10);
+								String replyId = res.substring(0, res.indexOf("')"));
+								JSONObject channelMsgJson = new JSONObject();
+								channelMsgJson.put("messageId", messageId);
+								channelMsgJson.put("replyId", replyId);
+								IQueue<String> queue = hazelcast.getQueue("channel|" + teamId + "|" + channelId);
+								queue.add(channelMsgJson.toString());
+								logger.info("----------> ENQUEUED MESSAGE id: " + messageId);
+
+							}
+						}
 					}
 				}
 			}
