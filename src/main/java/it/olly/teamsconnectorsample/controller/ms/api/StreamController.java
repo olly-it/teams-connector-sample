@@ -25,6 +25,7 @@ import it.olly.teamsconnectorsample.service.ms.MSClientHelper;
 @RequestMapping("/api/stream")
 public class StreamController {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	public static final int LONG_POLL_SECONDS = 30;
 
 	@Autowired
 	private HazelcastInstance hazelcast;
@@ -42,7 +43,7 @@ public class StreamController {
 		try {
 			String poll = null;
 			do {
-				poll = queue.poll(60, TimeUnit.SECONDS);
+				poll = queue.poll(LONG_POLL_SECONDS, TimeUnit.SECONDS);
 				if (poll != null) {
 					logger.info("getChatStream [" + chatId + "] - GOT MESSAGE");
 					JSONObject notif = new JSONObject(poll);

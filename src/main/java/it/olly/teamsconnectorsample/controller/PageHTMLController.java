@@ -51,9 +51,9 @@ public class PageHTMLController {
 		String loginUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize" //
 				+ "?client_id=" + CLIENT_ID //
 				+ "&response_type=code" //
-				+ "&redirect_uri=" + URLEncoder.encode(REDIRECT_URI, Charset.forName("utf-8")) //
+				+ "&redirect_uri=" + URLEncoder.encode(REDIRECT_URI, Charset.forName("utf-8").name()) //
 				+ "&response_mode=query" //
-				+ "&scope=" + URLEncoder.encode(SCOPE, Charset.forName("utf-8")) //
+				+ "&scope=" + URLEncoder.encode(SCOPE, Charset.forName("utf-8").name()) //
 				+ "&state=" + STATE;
 		response.getWriter().println("<a href=\"" + loginUrl + "\">login</a>");
 		response.getWriter().println("</body></html>");
