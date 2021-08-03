@@ -82,7 +82,7 @@ public class StreamController {
 		try {
 			String poll = null;
 			do {
-				poll = queue.poll(60, TimeUnit.SECONDS);
+				poll = queue.poll(LONG_POLL_SECONDS, TimeUnit.SECONDS);
 				if (poll != null) {
 					logger.info("getChannelStream [" + channelId + "] - GOT MESSAGE");
 					JSONObject notif = new JSONObject(poll);

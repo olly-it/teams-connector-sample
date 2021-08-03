@@ -36,6 +36,8 @@ public class PageHTMLController {
 	public String REDIRECT_URI;
 	@Value("${ms.scope}")
 	public String SCOPE;
+	@Value("${ms.webhooks.enabled:true}")
+	public Boolean webhooksEnabled;
 
 	@Autowired
 	private MSClientHelper msClientHelper;
@@ -169,33 +171,37 @@ public class PageHTMLController {
 		response.getWriter().println("<hr>");
 
 		// realtime stuff
-		String streamUrl = "/api/stream/chat?chatId=" + chatId + "&accessToken=" + accessToken;
-		response.getWriter().println("" //
-				+ "<script>" //
-				+ "        const evtSource = new EventSource('" + streamUrl + "', { withCredentials: false } );\n" //
-				+ "        evtSource.onmessage = function(event) {\n" //
-				+ "            console.log('got event', event);\n" //
-				+ "            var p = document.createElement('p');\n" //
-				+ "            var json = JSON.parse(event.data);\n" //
-				+ "            p.innerHTML = json.from+\" - \"+json.text;\n" //
-				+ "            document.getElementById('realtime').appendChild(p);\n" //
-				+ "        }\n" //
-				+ "</script>");
-		response.getWriter().println("<div id='realtime'></div>");
-		// subscribe to webhook TODO check if not already subscribed + manage expiration
-		String webhookResource = "/chats/" + chatId + "/messages";
-		try {
-			if (msClientHelper.alreadySubscribedToWebhook(webhookResource, accessToken)) {
-				logger.info("already subscribed to webhook");
-				response.getWriter()
-						.println("<br><b>already subscribed to webhook - will i receive notifications?</b>");
-			} else {
-				msClientHelper.subscribeToWebhook(webhookResource, accessToken);
-				response.getWriter().println("<br><b>subscribed to webhook: " + webhookResource + "</b>");
+		if (webhooksEnabled) {
+			String streamUrl = "/api/stream/chat?chatId=" + chatId + "&accessToken=" + accessToken;
+			response.getWriter().println("" //
+					+ "<script>" //
+					+ "        const evtSource = new EventSource('" + streamUrl + "', { withCredentials: false } );\n" //
+					+ "        evtSource.onmessage = function(event) {\n" //
+					+ "            console.log('got event', event);\n" //
+					+ "            var p = document.createElement('p');\n" //
+					+ "            var json = JSON.parse(event.data);\n" //
+					+ "            p.innerHTML = json.from+\" - \"+json.text;\n" //
+					+ "            document.getElementById('realtime').appendChild(p);\n" //
+					+ "        }\n" //
+					+ "</script>");
+			response.getWriter().println("<div id='realtime'></div>");
+			// subscribe to webhook TODO check if not already subscribed + manage expiration
+			String webhookResource = "/chats/" + chatId + "/messages";
+			try {
+				if (msClientHelper.alreadySubscribedToWebhook(webhookResource, accessToken)) {
+					logger.info("already subscribed to webhook");
+					response.getWriter()
+							.println("<br><b>already subscribed to webhook - will i receive notifications?</b>");
+				} else {
+					msClientHelper.subscribeToWebhook(webhookResource, accessToken);
+					response.getWriter().println("<br><b>subscribed to webhook: " + webhookResource + "</b>");
+				}
+			} catch (Exception e) {
+				logger.warn("already subscribed?", e);
+				response.getWriter().println("<br><b>can't subscribe to webhook: " + e.getMessage() + "</b>");
 			}
-		} catch (Exception e) {
-			logger.warn("already subscribed?", e);
-			response.getWriter().println("<br><b>can't subscribe to webhook: " + e.getMessage() + "</b>");
+		} else {
+			response.getWriter().println("Webhooks disabled by configuration<br><hr>");
 		}
 		response.getWriter().println("<br><hr>");
 
@@ -254,35 +260,39 @@ public class PageHTMLController {
 		response.getWriter().println("<hr>");
 
 		// realtime stuff
-		String streamUrl = "/api/stream/channel?teamId=" + teamId + "&channelId=" + channelId + "&accessToken="
-				+ accessToken;
-		response.getWriter().println("" //
-				+ "<script>" //
-				+ "        const evtSource = new EventSource('" + streamUrl + "', { withCredentials: false } );\n" //
-				+ "        evtSource.onmessage = function(event) {\n" //
-				+ "            console.log('got event', event);\n" //
-				+ "            var p = document.createElement('p');\n" //
-				+ "            var json = JSON.parse(event.data);\n" //
-				+ "            p.innerHTML = json.from+\" - \"+json.text;\n" //
-				+ "            document.getElementById('realtime').appendChild(p);\n" //
-				+ "        }\n" //
-				+ "</script>");
-		response.getWriter().println("<div id='realtime'></div>");
-
-		// subscribe to webhook TODO check if not already subscribed + manage expiration
-		String webhookResource = "/teams/" + teamId + "/channels/" + channelId + "/messages";
-		try {
-			if (msClientHelper.alreadySubscribedToWebhook(webhookResource, accessToken)) {
-				logger.info("already subscribed to webhook");
-				response.getWriter()
-						.println("<br><b>already subscribed to webhook - will i receive notifications?</b>");
-			} else {
-				msClientHelper.subscribeToWebhook(webhookResource, accessToken);
-				response.getWriter().println("<br><b>subscribed to webhook: " + webhookResource + "</b>");
+		if (webhooksEnabled) {
+			String streamUrl = "/api/stream/channel?teamId=" + teamId + "&channelId=" + channelId + "&accessToken="
+					+ accessToken;
+			response.getWriter().println("" //
+					+ "<script>" //
+					+ "        const evtSource = new EventSource('" + streamUrl + "', { withCredentials: false } );\n" //
+					+ "        evtSource.onmessage = function(event) {\n" //
+					+ "            console.log('got event', event);\n" //
+					+ "            var p = document.createElement('p');\n" //
+					+ "            var json = JSON.parse(event.data);\n" //
+					+ "            p.innerHTML = json.from+\" - \"+json.text;\n" //
+					+ "            document.getElementById('realtime').appendChild(p);\n" //
+					+ "        }\n" //
+					+ "</script>");
+			response.getWriter().println("<div id='realtime'></div>");
+	
+			// subscribe to webhook TODO check if not already subscribed + manage expiration
+			String webhookResource = "/teams/" + teamId + "/channels/" + channelId + "/messages";
+			try {
+				if (msClientHelper.alreadySubscribedToWebhook(webhookResource, accessToken)) {
+					logger.info("already subscribed to webhook");
+					response.getWriter()
+							.println("<br><b>already subscribed to webhook - will i receive notifications?</b>");
+				} else {
+					msClientHelper.subscribeToWebhook(webhookResource, accessToken);
+					response.getWriter().println("<br><b>subscribed to webhook: " + webhookResource + "</b>");
+				}
+			} catch (Exception e) {
+				logger.warn("already subscribed?", e);
+				response.getWriter().println("<br><b>can't subscribe to webhook: " + e.getMessage() + "</b>");
 			}
-		} catch (Exception e) {
-			logger.warn("already subscribed?", e);
-			response.getWriter().println("<br><b>can't subscribe to webhook: " + e.getMessage() + "</b>");
+		} else {
+			response.getWriter().println("Webhooks disabled by configuration<br><hr>");
 		}
 		response.getWriter().println("<br><hr>");
 

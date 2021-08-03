@@ -42,7 +42,7 @@ public class MSClientHelper {
 	private final static String GRAPHAPI_HOST = "https://graph.microsoft.com";
 	// ---------------------------------------------- 2021-07-20 T 17:00:00.0000000Z
 	private final static String MS_DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-	public final static int WEBHOOK_MINUTES_EXPIRATION = 5;
+	public final static int WEBHOOK_MINUTES_EXPIRATION = 10;
 
 	@Value("${ms.notification.receiver}")
 	public String notificationResponseUrl;
