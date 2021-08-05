@@ -28,6 +28,8 @@ import org.springframework.web.client.RestTemplate;
 import com.microsoft.graph.authentication.IAuthenticationProvider;
 import com.microsoft.graph.models.User;
 import com.microsoft.graph.requests.GraphServiceClient;
+import com.microsoft.graph.requests.MailFolderCollectionPage;
+import com.microsoft.graph.requests.MessageCollectionPage;
 
 /**
  * NOTE: sdk can be used for calls with version 1.0. for /beta/ requests,
@@ -49,17 +51,36 @@ public class MSClientHelper {
 
 	@Autowired
 	private RestTemplate restTemplate;
+	
+	private class MyAuthProvider implements IAuthenticationProvider{
+		private String token; 
+		public MyAuthProvider(String token) {
+			this.token = token;
+		}
+		public CompletableFuture<String> getAuthorizationTokenAsync(URL requestUrl) {
+			return CompletableFuture.completedFuture(token);
+		}
+	}
 
 	public User getUser(String accessToken) {
 		GraphServiceClient<?> graphClient = GraphServiceClient.builder()
-				.authenticationProvider(new IAuthenticationProvider() {
-					@Override
-					public CompletableFuture<String> getAuthorizationTokenAsync(URL requestUrl) {
-						return CompletableFuture.completedFuture(accessToken);
-					}
-				}).buildClient();
+				.authenticationProvider(new MyAuthProvider(accessToken)).buildClient();
 		return graphClient.me().buildRequest().get();
 	}
+	
+	public MailFolderCollectionPage getEmailFolders(String accessToken) {
+		GraphServiceClient<?> graphClient = GraphServiceClient.builder()
+				.authenticationProvider(new MyAuthProvider(accessToken)).buildClient();
+		
+		return graphClient.me().mailFolders().buildRequest().get();
+	}
+	
+	public MessageCollectionPage getEmails(String accessToken, String folderId) {
+		GraphServiceClient<?> graphClient = GraphServiceClient.builder()
+				.authenticationProvider(new MyAuthProvider(accessToken)).buildClient();
+		return graphClient.me().mailFolders(folderId).messages().buildRequest().get();
+	}
+
 
 	/**
 	 * 

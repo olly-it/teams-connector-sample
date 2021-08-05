@@ -3,7 +3,9 @@ package it.olly.teamsconnectorsample.controller;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,6 +21,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.microsoft.graph.models.MailFolder;
+import com.microsoft.graph.models.Message;
+import com.microsoft.graph.requests.MailFolderCollectionPage;
+import com.microsoft.graph.requests.MessageCollectionPage;
 
 import it.olly.teamsconnectorsample.service.ms.MSClientHelper;
 
@@ -115,6 +122,31 @@ public class PageHTMLController {
 		}
 		response.getWriter().println("</tr></table><br>");
 
+		//EMAIL FOLDERS
+		response.getWriter().println("<br><br>EMAIL FOLDERS:<BR>");
+		// get all folders
+		
+		MailFolderCollectionPage emailFolders = msClientHelper.getEmailFolders(accessToken);
+		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
+				+ "<th>id</th>" //
+				+ "<th>displayName</th>" //
+				+ "<th>count</th>" //
+				+ "</tr>");
+		List<MailFolder> currentPage = emailFolders.getCurrentPage();
+		for (MailFolder folder:currentPage) {
+			String id = folder.id;
+			String displayName = folder.displayName;
+			Integer tot = folder.totalItemCount;
+			String href = "/inEmailFolder?accessToken=" + accessToken + "&folderId=" + id;
+			response.getWriter().println("<tr>" //
+					+ "<td><a href=\"" + href + "\">" + id + "</a></td>" //
+					+ "<td>" + displayName + "</td>" //
+					+ "<td>" + tot + "</td>" //
+					+ "</tr>");
+			// NOTE folder.messages is null. to have messages i've to call another api
+		}
+		response.getWriter().println("</tr></table><br>");
+
 		response.getWriter().println("</body></html>");
 	}
 
@@ -138,6 +170,40 @@ public class PageHTMLController {
 			response.getWriter().println("<tr>" //
 					+ "<td><a href=\"" + href + "\">" + id + "</a></td>" //
 					+ "<td>" + displayName + "</td>" //
+					+ "</tr>");
+		}
+		response.getWriter().println("</tr></table><br>");
+
+		response.getWriter().println("</body></html>");
+	}
+	
+	@GetMapping(path = "/inEmailFolder", produces = MediaType.TEXT_HTML_VALUE)
+	public void inEmailFolder(@RequestParam String accessToken, @RequestParam String folderId, HttpServletResponse response)
+			throws IOException {
+		response.getWriter().println("<html><body>");
+		response.getWriter().println("<br><br>EMAILS:<BR>");
+
+		
+		MessageCollectionPage emails = msClientHelper.getEmails(accessToken, folderId);
+		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
+				+ "<th>from</th>" //
+				+ "<th>to</th>" //
+				+ "<th>subject</th>" //
+				+ "<th>bodyPreview</th>" //
+				+ "</tr>");
+		List<Message> currentPage = emails.getCurrentPage();
+		for (Message message:currentPage) {
+			//String id = message.id;
+			String from = message.from.emailAddress.address;
+			List<String> to = new ArrayList<String>();
+			message.toRecipients.stream().forEach(rec-> to.add(rec.emailAddress.address));
+			String subject = message.subject;
+			String bodyPreview = message.bodyPreview;
+			response.getWriter().println("<tr>" //
+					+ "<td>" + from + "</td>" //
+					+ "<td>" + to + "</td>" //
+					+ "<td>" + subject + "</td>" //
+					+ "<td>" + bodyPreview + "</td>" //
 					+ "</tr>");
 		}
 		response.getWriter().println("</tr></table><br>");
