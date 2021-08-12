@@ -36,7 +36,7 @@ public class MSNotificationController {
 			logger.info("receiveNotification - got validation request");
 			response.getWriter().print(validationToken);
 		} else {
-			logger.info("receiveNotification - got notification");
+			logger.info("receiveNotification - got notification. body: "+body);
 			JSONObject json = new JSONObject(body);
 			JSONArray jsonArray = json.getJSONArray("value");
 			for (int i = 0; i < jsonArray.length(); i++) {
