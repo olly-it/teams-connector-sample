@@ -22,8 +22,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.microsoft.graph.models.Attachment;
+import com.microsoft.graph.models.FileAttachment;
+import com.microsoft.graph.models.ItemAttachment;
 import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.Message;
+import com.microsoft.graph.models.ReferenceAttachment;
+import com.microsoft.graph.requests.AttachmentCollectionPage;
 import com.microsoft.graph.requests.MailFolderCollectionPage;
 import com.microsoft.graph.requests.MessageCollectionPage;
 
@@ -193,6 +198,21 @@ public class PageHTMLController {
 				+ "</tr>");
 		List<Message> currentPage = emails.getCurrentPage();
 		for (Message message:currentPage) {
+			
+			if (message.hasAttachments) {
+				// here message has attachment = null!
+				AttachmentCollectionPage emailAttachments = msClientHelper.getEmailAttachments(accessToken, folderId, message.id);
+				logger.info("subject:"+message.subject);
+				List<Attachment> att = emailAttachments.getCurrentPage();
+				for (Attachment at:att) {
+					//at could be FileAttachment, ItemAttachment or ReferenceAttachment
+					// FileAttachment has contentBytes <-- standard email are like this
+					// ItemAttachment has a property item that is an OutlookItem (contact, event or message, represented by an itemAttachment resource)
+					// ReferenceAttachment has a sourceUrl
+					logger.info("attachment: "+at.name+" ["+at.contentType+"]");
+				}
+			}
+			
 			//String id = message.id;
 			String from = message.from.emailAddress.address;
 			List<String> to = new ArrayList<String>();

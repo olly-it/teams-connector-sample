@@ -26,7 +26,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import com.microsoft.graph.authentication.IAuthenticationProvider;
+import com.microsoft.graph.models.Message;
 import com.microsoft.graph.models.User;
+import com.microsoft.graph.requests.AttachmentCollectionPage;
 import com.microsoft.graph.requests.GraphServiceClient;
 import com.microsoft.graph.requests.MailFolderCollectionPage;
 import com.microsoft.graph.requests.MessageCollectionPage;
@@ -79,6 +81,12 @@ public class MSClientHelper {
 		GraphServiceClient<?> graphClient = GraphServiceClient.builder()
 				.authenticationProvider(new MyAuthProvider(accessToken)).buildClient();
 		return graphClient.me().mailFolders(folderId).messages().buildRequest().get();
+	}
+	
+	public AttachmentCollectionPage getEmailAttachments(String accessToken, String folderId, String emailId) {
+		GraphServiceClient<?> graphClient = GraphServiceClient.builder()
+				.authenticationProvider(new MyAuthProvider(accessToken)).buildClient();
+		return graphClient.me().mailFolders(folderId).messages(emailId).attachments().buildRequest().get();
 	}
 
 
@@ -188,7 +196,7 @@ public class MSClientHelper {
 
 		// body
 		JSONObject body = new JSONObject();
-		body.put("changeType", "created");
+		body.put("changeType", "created,deleted,updated");
 		body.put("notificationUrl", notificationResponseUrl);
 		body.put("resource", webhookResource);
 		Calendar cal = Calendar.getInstance();
