@@ -23,11 +23,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.microsoft.graph.models.Attachment;
-import com.microsoft.graph.models.FileAttachment;
-import com.microsoft.graph.models.ItemAttachment;
 import com.microsoft.graph.models.MailFolder;
 import com.microsoft.graph.models.Message;
-import com.microsoft.graph.models.ReferenceAttachment;
 import com.microsoft.graph.requests.AttachmentCollectionPage;
 import com.microsoft.graph.requests.MailFolderCollectionPage;
 import com.microsoft.graph.requests.MessageCollectionPage;
@@ -54,12 +51,12 @@ public class PageHTMLController {
 	@Autowired
 	private MSClientHelper msClientHelper;
 
-	// useful?
-	public static final String STATE = "12345";
-
 	@GetMapping(produces = MediaType.TEXT_HTML_VALUE)
 	public void index(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		logger.info("index Called");
+		// this is a code MS will returns on the AuthController when i receive the
+		// Authorization Response
+		String state = "my_mapping_id_" + System.currentTimeMillis();
 		response.getWriter().println("<html><body>");
 		response.getWriter().println("HI BOY!<br>");
 		String loginUrl = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize" //
@@ -68,7 +65,7 @@ public class PageHTMLController {
 				+ "&redirect_uri=" + URLEncoder.encode(REDIRECT_URI, Charset.forName("utf-8").name()) //
 				+ "&response_mode=query" //
 				+ "&scope=" + URLEncoder.encode(SCOPE, Charset.forName("utf-8").name()) //
-				+ "&state=" + STATE;
+				+ "&state=" + state;
 		response.getWriter().println("<a href=\"" + loginUrl + "\">login</a>");
 		response.getWriter().println("</body></html>");
 	}
@@ -127,10 +124,10 @@ public class PageHTMLController {
 		}
 		response.getWriter().println("</tr></table><br>");
 
-		//EMAIL FOLDERS
+		// EMAIL FOLDERS
 		response.getWriter().println("<br><br>EMAIL FOLDERS:<BR>");
 		// get all folders
-		
+
 		MailFolderCollectionPage emailFolders = msClientHelper.getEmailFolders(accessToken);
 		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
 				+ "<th>id</th>" //
@@ -138,7 +135,7 @@ public class PageHTMLController {
 				+ "<th>count</th>" //
 				+ "</tr>");
 		List<MailFolder> currentPage = emailFolders.getCurrentPage();
-		for (MailFolder folder:currentPage) {
+		for (MailFolder folder : currentPage) {
 			String id = folder.id;
 			String displayName = folder.displayName;
 			Integer tot = folder.totalItemCount;
@@ -181,14 +178,13 @@ public class PageHTMLController {
 
 		response.getWriter().println("</body></html>");
 	}
-	
+
 	@GetMapping(path = "/inEmailFolder", produces = MediaType.TEXT_HTML_VALUE)
-	public void inEmailFolder(@RequestParam String accessToken, @RequestParam String folderId, HttpServletResponse response)
-			throws IOException {
+	public void inEmailFolder(@RequestParam String accessToken, @RequestParam String folderId,
+			HttpServletResponse response) throws IOException {
 		response.getWriter().println("<html><body>");
 		response.getWriter().println("<br><br>EMAILS:<BR>");
 
-		
 		MessageCollectionPage emails = msClientHelper.getEmails(accessToken, folderId);
 		response.getWriter().println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
 				+ "<th>from</th>" //
@@ -197,26 +193,28 @@ public class PageHTMLController {
 				+ "<th>bodyPreview</th>" //
 				+ "</tr>");
 		List<Message> currentPage = emails.getCurrentPage();
-		for (Message message:currentPage) {
-			
+		for (Message message : currentPage) {
+
 			if (message.hasAttachments) {
 				// here message has attachment = null!
-				AttachmentCollectionPage emailAttachments = msClientHelper.getEmailAttachments(accessToken, folderId, message.id);
-				logger.info("subject:"+message.subject);
+				AttachmentCollectionPage emailAttachments = msClientHelper.getEmailAttachments(accessToken, folderId,
+						message.id);
+				logger.info("subject:" + message.subject);
 				List<Attachment> att = emailAttachments.getCurrentPage();
-				for (Attachment at:att) {
-					//at could be FileAttachment, ItemAttachment or ReferenceAttachment
+				for (Attachment at : att) {
+					// at could be FileAttachment, ItemAttachment or ReferenceAttachment
 					// FileAttachment has contentBytes <-- standard email are like this
-					// ItemAttachment has a property item that is an OutlookItem (contact, event or message, represented by an itemAttachment resource)
+					// ItemAttachment has a property item that is an OutlookItem (contact, event or
+					// message, represented by an itemAttachment resource)
 					// ReferenceAttachment has a sourceUrl
-					logger.info("attachment: "+at.name+" ["+at.contentType+"]");
+					logger.info("attachment: " + at.name + " [" + at.contentType + "]");
 				}
 			}
-			
-			//String id = message.id;
+
+			// String id = message.id;
 			String from = message.from.emailAddress.address;
 			List<String> to = new ArrayList<String>();
-			message.toRecipients.stream().forEach(rec-> to.add(rec.emailAddress.address));
+			message.toRecipients.stream().forEach(rec -> to.add(rec.emailAddress.address));
 			String subject = message.subject;
 			String bodyPreview = message.bodyPreview;
 			response.getWriter().println("<tr>" //
@@ -361,7 +359,7 @@ public class PageHTMLController {
 					+ "        }\n" //
 					+ "</script>");
 			response.getWriter().println("<div id='realtime'></div>");
-	
+
 			// subscribe to webhook TODO check if not already subscribed + manage expiration
 			String webhookResource = "/teams/" + teamId + "/channels/" + channelId + "/messages";
 			try {

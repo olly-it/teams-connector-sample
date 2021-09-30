@@ -98,6 +98,9 @@ public class MSAuthController {
 			response.getWriter().println(name + ": " + request.getParameter(name) + "<br>");
 		}
 
+		// this is the state i set previously, when i composed login URL
+		logger.info("my state is: " + request.getParameter("state"));
+
 		// exchange code to accessToken
 		logger.info("exchange code to accessToken");
 		HttpHeaders headers = new HttpHeaders();
