@@ -1,6 +1,10 @@
 package it.olly.teamsconnectorsample.controller;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -10,6 +14,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -17,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,6 +53,8 @@ public class PageHTMLController {
 	public String SCOPE;
 	@Value("${ms.webhooks.enabled:true}")
 	public Boolean webhooksEnabled;
+	@Value("${ms.chat.attachments.local.dir:}")
+	public String chatAttachmentsLocalDir;
 
 	@Autowired
 	private MSClientHelper msClientHelper;
@@ -305,6 +313,48 @@ public class PageHTMLController {
 			String from = fromJO != null ? fromJO.getJSONObject("user").getString("displayName") : "[empty]";
 			JSONObject body = msgJO.getJSONObject("body");
 
+			// save chat attachment?
+			if (StringUtils.hasText(chatAttachmentsLocalDir)) {
+				JSONArray attachments = msgJO.getJSONArray("attachments");
+				for (int a = 0; a < attachments.length(); a++) {
+					JSONObject cma = attachments.getJSONObject(a);
+					String filename = cma.getString("name");
+					String attachmentContentUrl = cma.getString("contentUrl");
+
+					// DLD attachment
+					// get root webUrl
+					JSONObject rootJson = msClientHelper.lowLevelGet("/v1.0/me/drive/root", accessToken);
+					String rootWebUrl = rootJson.getString("webUrl");
+
+					// root web url is something like:
+					// https://enginius-my.sharepoint.com/personal/alessio_olivieri_enginius_com/Documents
+					// attachment web url is something like:
+					// https://enginius-my.sharepoint.com/personal/alessio_olivieri_enginius_com/Documents/Microsoft Teams Chat Files/aruco4x4.png
+					// i'll need to compose the drive download query for (file url) = (attachment web url) - (root web url)
+					// https://graph.microsoft.com/1.0/me/drive/root:(file url) i.e.
+					// https://graph.microsoft.com/1.0/me/drive/root:/Microsoft Teams Chat Files/aruco4x4.png
+					// then i get "@microsoft.graph.downloadUrl" of this returned object
+					if (attachmentContentUrl != null && attachmentContentUrl.startsWith(rootWebUrl)) {
+						String fileUrl = attachmentContentUrl.substring(rootWebUrl.length());
+						if (fileUrl.startsWith("/"))
+							fileUrl = fileUrl.substring(1);
+						JSONObject attachmentJson = msClientHelper.lowLevelGet("/beta/me/drive/root:/" + fileUrl,
+								accessToken);
+
+						// save attachment
+						logger.info("got attachment " + attachmentJson);
+						URL dldUrl = new URL(attachmentJson.getString("@microsoft.graph.downloadUrl"));
+						File f = new File("/tmp/attachments/");
+						f.mkdirs();
+						InputStream fin = dldUrl.openConnection().getInputStream();
+						FileOutputStream fout = new FileOutputStream(new File(f, filename));
+						IOUtils.copy(fin, fout);
+						fin.close();
+						fout.close();
+					}
+				}
+			}
+			// display messages
 			response.getWriter().println("<tr>" //
 					+ "<td>" + id + "</td>" //
 					+ "<td>" + createdDateTime + "</td>" //
