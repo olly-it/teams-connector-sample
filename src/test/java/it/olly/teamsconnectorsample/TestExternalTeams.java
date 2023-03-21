@@ -20,13 +20,12 @@ public class TestExternalTeams {
     void listChannels() throws JSONException {
         System.out.println("doing listChannels");
 
-        JSONObject json = msClientHelper.lowLevelGet("/v1.0/me", accessToken);
-        String myUserId = json.getString("id");
-
         // https://graph.microsoft.com/v1.0/groups?$filter=groupTypes/any(c:c+eq+'Unified')&$select=id,displayName,mail,description
         // https://graph.microsoft.com/v1.0/groups?$filter=resourceProvisioningOptions/Any(x:x eq 'Team')
         // https://graph.microsoft.com/v1.0/me/memberOf
-        json = msClientHelper.lowLevelGet("/v1.0/users/" + myUserId + "/teamwork/associatedTeams", accessToken);
+        // JSONObject json = msClientHelper.lowLevelGet("/v1.0/users/" + myUserId + "/teamwork/associatedTeams",
+        // accessToken);
+        JSONObject json = msClientHelper.lowLevelGet("/v1.0/me/teamwork/associatedTeams", accessToken);
         System.out.println("allTeams\n" + json);
         JSONArray teams = json.getJSONArray("value");
         for (int i = 0; i < teams.length(); i++) {

@@ -93,7 +93,6 @@ public class PageHTMLController {
         response.getWriter()
                 .println(accessToken);
         JSONObject json = msClientHelper.lowLevelGet("/beta/me", accessToken);
-        String myUserId = json.getString("id");
         response.getWriter()
                 .println("<!-- ME: ");
         response.getWriter()
@@ -138,7 +137,8 @@ public class PageHTMLController {
         // json = msClientHelper.lowLevelGet("/beta/me/joinedTeams", accessToken);
         // json = msClientHelper.lowLevelGet("/v1.0/groups?
         // $filter=resourceProvisioningOptions/Any(x:x eq 'Team')",accessToken); - needs scope GroupMember.Read.All
-        json = msClientHelper.lowLevelGet("/v1.0/users/" + myUserId + "/teamwork/associatedTeams", accessToken);
+        // json = msClientHelper.lowLevelGet("/v1.0/users/" + myUserId + "/teamwork/associatedTeams", accessToken);
+        json = msClientHelper.lowLevelGet("/v1.0/me/teamwork/associatedTeams", accessToken);
 
         JSONArray teams = json.getJSONArray("value");
         response.getWriter()
