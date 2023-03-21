@@ -92,11 +92,17 @@ public class PageHTMLController {
                 .println("<br><br>ACCESS_TOKEN:<br>");
         response.getWriter()
                 .println(accessToken);
-        response.getWriter()
-                .println("<br><br>CHATS:<BR>");
-
         JSONObject json = msClientHelper.lowLevelGet("/beta/me", accessToken);
         String myUserId = json.getString("id");
+        response.getWriter()
+                .println("<!-- ME: ");
+        response.getWriter()
+                .println(json);
+        response.getWriter()
+                .println(" -->");
+
+        response.getWriter()
+                .println("<br><br>CHATS:<BR>");
 
         json = msClientHelper.lowLevelGet("/beta/me/chats", accessToken);
         JSONArray chats = json.getJSONArray("value");
@@ -130,8 +136,8 @@ public class PageHTMLController {
 
         // get all teams
         // json = msClientHelper.lowLevelGet("/beta/me/joinedTeams", accessToken);
-        // json = msClientHelper.lowLevelGet("/v1.0/groups?$filter=resourceProvisioningOptions/Any(x:x eq
-        // 'Team')",accessToken);
+        // json = msClientHelper.lowLevelGet("/v1.0/groups?
+        // $filter=resourceProvisioningOptions/Any(x:x eq 'Team')",accessToken); - needs scope GroupMember.Read.All
         json = msClientHelper.lowLevelGet("/v1.0/users/" + myUserId + "/teamwork/associatedTeams", accessToken);
 
         JSONArray teams = json.getJSONArray("value");
@@ -139,19 +145,20 @@ public class PageHTMLController {
                 .println("<table BORDER=1 CELLSPACING=0 CELLPADDING=0><tr>" //
                         + "<th>id</th>" //
                         + "<th>displayName</th>" //
-                        + "<th>description</th>" //
+                        + "<th>tenantId</th>" //
                         + "</tr>");
         for (int i = 0; i < teams.length(); i++) {
             JSONObject teamJO = teams.getJSONObject(i);
             String id = teamJO.getString("id");
             String displayName = teamJO.optString("displayName");
-            String description = teamJO.optString("description"); // doing "/associatedTeams" this is always null
+            String tenantId = teamJO.optString("tenantId"); // doing "/associatedTeams" i've tenantId instead of
+                                                            // description
             String href = "/inTeam?accessToken=" + accessToken + "&teamId=" + id;
             response.getWriter()
                     .println("<tr>" //
                             + "<td><a href=\"" + href + "\">" + id + "</a></td>" //
                             + "<td>" + displayName + "</td>" //
-                            + "<td>" + description + "</td>" //
+                            + "<td>" + tenantId + "</td>" //
                             + "</tr>");
         }
         response.getWriter()
